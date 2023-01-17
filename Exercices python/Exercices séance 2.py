@@ -159,9 +159,101 @@ alea = [rd.randint(0,50) for i in range(30)]
 print(sorted(alea), enleverDoublon(alea))
 
 ###### Exercice 7 ######
+print("\n ########## Exercice 7 ########## \n ")
 
-### Tris quadratiques
+"""
+Soient L1 et L2 2 listes triées par ordre croissant. 
+Les fusionner pour obtenir une liste avec tous les éléments de L1 et tous les éléments de L2 triés en ordre croissant. 
+On n'utilise pas la méthode sort.
+"""
 
-### Tris linéaires
+def triNaif(L1, L2):
+    """
+    Tri en utilisant le fait que les deux listes soient triés.
+    """
+    L = []
+    i = 0
+    j = 0
+    while i < len(L1) and j < len(L2):
+        if L1[i] < L2[j]:
+            L.append(L1[i])
+            i += 1
+        else:
+            L.append(L2[j])
+            j += 1
+    L = L + L1[i:] + L2[j:]
+    return L
+
+def triParSelection(L1:list, L2:list) -> list:
+    """
+    Tri par sélection. 
+    On cherche le minimum de la liste et on le place en début de liste.
+    On recommence avec la liste restante.
+    """
+    L = L1 + L2
+    n = len(L)
+    for i in range(n-1):
+        min = i
+        for j in range(i+1, n):
+            if L[j] < L[min]:
+                min = j
+        L[i], L[min] = L[min], L[i]
+    return L
+
+def triBulle(L1:list, L2:list) -> list:
+    """
+    Tri à bulle.
+    On compare deux éléments consécutifs et on les échange si nécessaire.
+    On recommence jusqu'à ce que la liste soit triée.
+    """
+    L = L1 + L2
+    for i in range(len(L)):
+        for j in range(len(L)-1):
+            if L[j] > L[j+1]:
+                L[j], L[j+1] = L[j+1], L[j]
+    return L
+
+def triInsertion(L1:list, L2:list) -> list:
+    """
+    Tri par insertion.
+    On prend un élément de la liste et on le place dans la partie triée de la liste.
+    On recommence avec l'élément suivant.
+    """
+    L = L1 + L2
+    for i in range(len(L)):
+        j = i
+        while j > 0 and L[j] < L[j-1]:
+            L[j], L[j-1] = L[j-1], L[j]
+            j -= 1
+    return L
+
+def triRapide(L1:list = [], L2:list = []) -> list:
+    """
+    Tri rapide.
+    On prend un élément de la liste comme pivot.
+    On place tous les éléments inférieurs au pivot à gauche et tous les éléments supérieurs ou égaux au pivot à droite.
+    On recommence avec les deux parties, de manière récursive.
+    Par défaut, L1 et L2 sont des listes vides pour pouvoir appeler la fonction avec une seule liste en argument.
+    """
+    L = L1 + L2
+    if len(L) <= 1:
+        return L
+    else:
+        # On prend le premier élément de la liste comme pivot (on peut prendre un autre élément)
+        pivot = L[0]
+        inf = [x for x in L[1:] if x < pivot] # On prend tous les éléments inférieurs au pivot
+        sup = [x for x in L[1:] if x >= pivot] # On prend tous les éléments supérieurs ou égaux au pivot
+        return triRapide(inf) + [pivot] + triRapide(sup) # On trie récursivement les deux parties et on fusionne (concaténation)
 
 # Tests
+L1 = sorted([rd.randint(0, 100) for i in range(10)])
+L2 = sorted([rd.randint(0, 100) for i in range(10)])
+
+print(f"L1 = {L1} \n L2 = {L2} \n")
+print(f"La liste triée est : {sorted(L1+L2)}")
+
+print("Tri naïf : ", triNaif(L1, L2))
+print("Tri par sélection : ",triParSelection(L1, L2))
+print("Tri à bulle : ",triBulle(L1, L2))
+print("Tri insertion : ",triInsertion(L1, L2))
+print("Tri rapide : ",triRapide(L1, L2))
