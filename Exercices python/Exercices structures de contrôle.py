@@ -15,7 +15,7 @@ def prixRepro(nb:int) -> float:
     Affiche le prix en euro d'un nombre de copies à imprimer.
     """
     if nb < 0 :
-        print("Le nombre de copies doit être positif")
+        return("Le nombre de copies doit être positif")
     if 0 <= nb <= 10:
         prix = nb*0.2
     elif 10 < nb <=30:
@@ -30,18 +30,29 @@ print(prixRepro(10)) # 2.0
 print(prixRepro(27)) # 4.55
 print(prixRepro(30)) # 5.0
 print(prixRepro(60)) # 8.0
-print(prixRepro(-5)) #
+print(prixRepro(-5)) # None (Le nombre de copies doit être positif)
 
 ###### Exercice 3
-def saisieWhile():
+def saisieFor():
     """
     L'utilisateur saisie le nombre de nombres voulues, puis les rentre.
     """
-    return
+    nb = int(input("Combien de nombres voulez-vous saisir ? "))
+    l = [input(f"Entrer le {i+1}th nombre : ") for i in range(nb)]
+    return l
 
-def saisieFor():
-    return
+def saisieWhile():
+    nb = int(input("Combien de nombres voulez-vous saisir ? "))
+    i = 0
+    l = []
+    while i < nb:
+        l.append(input(f"Entrer le {i+1}th nombre : "))
+        i += 1
+    return l
+
 # Tests
+#saisieFor()
+#saisieWhile()
 
 ###### Exercice 4
 def ecart_type(l:list) -> float :
