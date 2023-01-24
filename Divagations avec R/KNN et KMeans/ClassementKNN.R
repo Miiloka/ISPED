@@ -2,18 +2,18 @@
 
 # Distance euclidienne entre p vecteurs de dimension n
 distance_euclidienne <- function(matrice, vecteur) {
-    # Initialisation des variables
-    distance <- c()
+    # Initialisation du vecteur distance de longueur p nrow(matrice)
+    distance <- c(rep(0, nrow(matrice)))
     # Calcul des distances
-    for (i in 1:seq_len(dim(matrice))[1]){
-        distance <- c(distance, sqrt(sum((matrice[i, ] - vecteur)^2)))
+    for (i in 1:nrow(matrice)){
+        distance[i] <- sqrt(sum((matrice[i, ] - vecteur)^2))
     }
     return(distance)
 }
 
-KNN_simple <- function(data, target, k) { # nolint: object_name_linter.
+KNN_simple <- function(data, target, k) {
     # Initialisation des variables
-    indices <- c()
+    indices <- c(rep(0, nrow(data)))
 
     # Calcul des distances
     distance <- distance_euclidienne(data, target)

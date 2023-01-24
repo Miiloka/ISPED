@@ -26,3 +26,35 @@ for (i in 1:seq_len(matrice)[1]){
 
 distance1
 distance2
+
+
+# Vérifie si il y a le mot "Affiche" dans les phrases du vecteur, et l'ajoute à a
+# Exemple : 
+# vecter <- c("Affiche moi ça", "Affiche 5", "5", 4)
+# a doit contenir "Affiche moi ça" et "Affiche 5"
+
+vecter <- c("Affiche moi ça", "Affiche 5", "5", 4)
+a <- c()
+for (i in 1:seq_len(vecter)[1]){
+    if (grepl("Affiche", vecter[i])){
+        a <- c(a, vecter[i])
+    }
+}
+
+
+# fonction pour calculer le déterminant d'une matrice A
+determinant_rec <- function(A){
+    if (nrow(A) == 2){
+        return(A[1, 1] * A[2, 2] - A[1, 2] * A[2, 1])
+    }
+    else{
+        det <- 0
+        for (i in 1:seq_len(A)[1]){
+            det <- det + (-1)^(i+1) * A[1, i] * determinant_rec(A[-1, -i])
+        }
+        return(det)
+    }
+}
+
+a <- matrix(c(1, 2, 3, 4), 2, 2)
+determinant_rec(as.matrix(a))
