@@ -1,3 +1,8 @@
+##############################################################
+# A améliorer :                                              #
+# - pivot de gauss : echanger les lignes si le pivot est nul #
+##############################################################
+
 ########## Exercice 1 ##########
 
 # Déterminant récursif
@@ -47,7 +52,7 @@ inverse <- function(matrice) {
   return(transposee(comatrice(matrice)) / determinant_rec(matrice))
 }
 
-########## Exercoce 2 ##########
+########## Exercice 2 ##########
 
 # Pivot de Gauss
 pivot_gauss <- function(a) {
@@ -77,9 +82,9 @@ pivot_gauss <- function(a) {
   return(list(a, inv_a)) # Renvoyer A permet de vérifier que A soit l'identité
 }
 
-A <- matrix(1:4, nrow = 2, ncol = 2)
-pivot_gauss(A)
-solve(A)
+matrice_a <- matrix(1:4, nrow = 2, ncol = 2)
+pivot_gauss(matrice_a)
+solve(matrice_a)
 
 
 ########## Microbenchmark ##########
