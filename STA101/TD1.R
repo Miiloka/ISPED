@@ -1,9 +1,12 @@
-library(ggplot2)
+library(epiR)
+library(epitools)
 
 ################## Partie 1 - Statistiques descriptives
 
+alpha = 0.05
+
 # 1.1 - Chargement des données
-data <- read.table("Github\\ISPED\\STA101\\cweschler.txt", header = TRUE, sep = "\t")
+data2 <- read.table("Github\\ISPED\\STA101\\cweschler.txt", header = TRUE, sep = "\t")
 
 # 1.2 - Statistiques descriptives de data$AGE et data$CODEW0
 
@@ -97,6 +100,73 @@ barplot(c(moyenne_femmes, moyenne_hommes),
 (test_2_1$statistic)
 (test_2_1$p.value)
 (test_2_1$conf.int)
+
+# 2.2 - Test d'association entre les variables sexe et le score CODEW0 chez les plus de 80 ans
+personnes_moins_de_80_ans <- data[data$AGE > 80, ]
+nrow(personnes_moins_de_80_ans)
+
+# Trie du score 
+personnes_moins_de_80_ans <- personnes_moins_de_80_ans[order(personnes_moins_de_80_ans$CODEW0), ]
+
+
+# test de wilcoxon
+wilcox.test(personnes_moins_de_80_ans$CODEW0 ~ personnes_moins_de_80_ans$SEXE, alternative = "two.sided")
+
+# Nombre de personnes avec une consommation de vin comvin == 0, 1 puis 2 dans data
+table(data$COMVIN)
+
+# Moyenne score pour chaque niveau de consommation de vin
+(moyenne_score_0 <- mean(data[data$COMVIN == 0, "CODEW0"]))
+(moyenne_score_1 <- mean(data[data$COMVIN == 1, "CODEW0"]))
+(moyenne_score_2 <- mean(data[data$COMVIN == 2, "CODEW0"]))
+
+# Moyenne totale
+moyenne_score <- mean(data$CODEW0)
+
+# Effectif dans chaque niveau de consommation de vin
+(n0 <- nrow(data[data$COMVIN == 0, ]))
+(n1 <- nrow(data[data$COMVIN == 1, ]))
+(n2 <- nrow(data[data$COMVIN == 2, ]))
+
+# Somme carrés intra SCE
+SCE <- sum((data[data$COMVIN == 0, "CODEW0"] - moyenne_score_0)^2) +
+        sum((data[data$COMVIN == 1, "CODEW0"] - moyenne_score_1)^2) +
+        sum((data[data$COMVIN == 2, "CODEW0"] - moyenne_score_2)^2)
+
+# Somme carrés inter SCR
+SCR <- n0 * (moyenne_score_0 - moyenne_score)^2 +
+        n1 * (moyenne_score_1 - moyenne_score)^2 +
+        n2 * (moyenne_score_2 - moyenne_score)^2
+
+# Test F
+(F <- (SCR / (3 - 1)) / (SCE / (501 - 3)))
+
+# Test anova directement
+anova(lm(CODEW0 ~ as.factor(COMVIN), data = data2))
+summary(aov(CODEW0 ~ as.factor(COMVIN), data = data2))
+
+# Région critique
+(fsup <- qf(alpha, df1 = 3 - 1, df2 = 501 - 3, lower.tail = FALSE))
+
+# p-valeur
+(pvalue <- pf(F, df1 = 3 - 1, df2 = 501 - 3, lower.tail = FALSE))
+
+# 2.4 Association niveau d'éducation (certif) et consommation de vin (comvin) chez les plus de 80 ans
+
+(personnes_plus_de_80_ans <- data[data$AGE > 80, ])
+
+# Tableau de contingence entre certif et comvin
+TCO <- table(personnes_plus_de_80_ans$CERTIF, personnes_plus_de_80_ans$COMVIN)
+TCO <- rbind(TCO, colSums(TCO))
+TCO <- cbind(TCO, rowSums(TCO))
+
+# Tableau de contingence théorique
+TCT <- matrix(0, nrow = 4, ncol = 4)
+for (i in 1:4) {
+  for (j in 1:4) {
+    TCT[i, j] <- TCO[4, j] * TCO[i, 4] / TCO[4, 4]
+  }
+}
 
 ################## Partie 3 - Régression linéaire simple
 

@@ -40,21 +40,3 @@ for (i in 1:seq_len(vecter)[1]){
         a <- c(a, vecter[i])
     }
 }
-
-
-# fonction pour calculer le déterminant d'une matrice A
-determinant_rec <- function(A){
-    if (nrow(A) == 2){
-        return(A[1, 1] * A[2, 2] - A[1, 2] * A[2, 1])
-    }
-    else{
-        det <- 0
-        for (i in 1:seq_len(A)[1]){
-            det <- det + (-1)^(i+1) * A[1, i] * determinant_rec(A[-1, -i])
-        }
-        return(det)
-    }
-}
-
-a <- matrix(c(1, 2, 3, 4), 2, 2)
-determinant_rec(as.matrix(a))
