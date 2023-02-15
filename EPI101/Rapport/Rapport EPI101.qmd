@@ -1,0 +1,161 @@
+---
+title: "Rapport EPI101"
+author: Stear Alec, Perpère Maud, Orué Adrien
+format: 
+    html:
+        toc: true
+        html-math-method: mathjax
+        toc_float: true
+        code-fold: true
+---
+![](cover.jpg){width=30% fig-align="center"} 
+
+## Le groupe et avant-propos
+Pour ce rapport, nous avons choisi la base de données BDD11.
+
+Tous les calculs ont été réalisés en R, et le rapport a été réalisé à l'aide de Quarto. 
+
+Nous notons :
+
+* OFDV : Opinion Favorable Défavorable à la Vaccination
+* ESG : Etat de Santé Général
+* IS : Indicateur Socioéconomique
+
+Quand mentionné, les calculs seront détaillés en LaTeX en annexe du rapport.
+
+# Introduction
+
+# Méthodes
+Les Baromètres Santé sont des études transversales répétées, menées depuis 1992 et visant à mieux comprendre les connaissances, attitudes, opinions et habitudes des Français en matière de santé. 
+
+En 2019, Santé publique France a lancé la 11ème édition de l'enquête, qui a abordé de nombreux thèmes tels que la vaccination, le tabac et l'alcool. L'échantillon de l'enquête consistait en 10 352 personnes âgées de 18 à 85 ans résidant en France métropolitaine et parlant français. 
+
+Les données que nous avons utilisées pour cette analyse proviennent de l'enquête baromètre santé 2019 et ont été sélectionnées de manière aléatoire à partir d'un sous-ensemble de personnes ayant répondu au questionnaire sur la vaccination. En tout, du 9 janvier au 29 juin 2019, 10.352 personnes âgées de 18 à 85 ans, résidant en France métropolitaine et parlant le français, ont été interrogées par téléphone.
+
+Notre analyse se base sur la sélection aléatoire d’un échantillon de 2.213 individus parmi les 10.352 participants. 
+
+Notre objectif est d'estimer la fréquence des opinions favorables (ou défavorables) aux vaccins, ainsi que de comprendre leur lien avec l'état de santé général et un indicateur socioéconomique de notre choix.
+
+# Résultats
+
+Procédons déjà à l'appel des librairies qui nous seront utiles pour cette analyse.
+```{r message = FALSE, warning=FALSE}
+# === Appel des librairies === #
+# install.packages("skimr", "ggplot2", "tidyverse", "gtsummary", "emmeans", "RColorBrewer")
+library(skimr) # Résumé des données (nb d'obs, var, val manquantes...)
+library(emmeans) # cf. https://www.youtube.com/watch?v=_okuMw4JFfU
+library(tidyverse) # Importe bcp de librairies (https://tidyverse.tidyverse.org)
+library(gtsummary) # Pour faire des tableaux de résumés
+library(gt) # Complément de gtsummary
+library(RColorBrewer) # Pour les couleurs type revues scientifiques
+
+# === Importation des données === #
+# setwd("Github\\ISPED\\EPI101\\Rapport")
+data <- read.csv("BDD/BDD11.csv", header = TRUE, sep = ";")
+```
+On a en tout 56 variables - dont 28 concernant les vaccins - le tout pour un total de 2.213 observations.
+
+## Objectif 1 - Estimation de la fréquence d'OFDV
+
+Nous appelons une opinion favorable à la vaccination, toute personne ayant répondu "non" à la question "Défavorable à certaines vaccinations en 
+particulier", codé Vacc_defav. Les personnes ayant votés "oui" ou "oui à toutes les vaccinations en général" sont considérées comme ayant une opinion défavorable à la vaccination.
+
+Notons $f_{\text{fav}}$ et $f_{\text{defav}}$ les fréquences d'OFDV favorables et défavorables dans notre échantillon, respectivement. On souhaite estimer $P_{\text{fav}}$ et $P_{\text{defav}}$, les fréquences d'OFDV favorables et défavorables dans la population cible de l'étude. 
+
+Empiriquement, $\hat{P}_{\text{fav}} = f_{\text{fav}}$ et $\hat{P}_{\text{defav}} = f_{\text{defav}}$. Les intervalles de confiance qui leurs sont associés sont : 
+$$
+\begin{align}
+\hat{P}_{\text{fav}} \in \left[f_{\text{fav}} \pm U_\alpha \sqrt{\frac{f_{\text{fav}} \times (1 - f_{\text{fav}})}{n}}\right] \\
+\hat{P}_{\text{defav}} \in \left[f_{\text{defav}} \pm U_\alpha \sqrt{\frac{f_{\text{defav}} \times (1 - f_{\text{defav}})}{n}}\right]
+\end{align}
+$$
+, avec $U_\alpha$ un coefficient indépendant de $f$ et de $n$ lu dans la table de l'écart-réduit, et n l'effectif de l'échantillon d'étude (à savoir $n = 2.213$).
+
+Sous R, on obtient les intervalles suivants :
+```{r}
+vaccins <- data[c(28:56)]
+vaccins$Vacc_defav <- ifelse(vaccins$Vacc_defav == "(Oui, a toutes les vaccinations en general)", "Oui", vaccins$Vacc_defav)
+
+vaccins %>%
+    select(Vacc_defav) %>%
+    tbl_summary(
+        statistic = all_categorical() ~ "{n} ({p})",
+        label = Vacc_defav ~ "Êtes-vous défavorable à la vaccination ?",
+        digits = all_categorical() ~ c(0, 2)
+    ) %>%
+    add_ci(
+        statistic = all_categorical() ~ "{conf.low} - {conf.high}",
+        style_fun = everything() ~ purrr::partial(style_number, digits = 3)
+    ) %>%
+    modify_caption(
+        "**Répartition de l'opinion vis-à-vis de la vaccination chez 18 à 85 ans résidant en France métropolitaine et parlant français. Étude Baromètre Santé 2019.**"
+    ) %>%
+    modify_header(
+        label = "**Question posée**",
+        stat_0 = "**Effectif (N = {N})**",
+        ci_stat_0 = "**IC 95%**"
+    ) %>%
+    modify_footnote(
+        update = ci_stat_0 ~ "IC : Intervalle de confiance",
+        abbreviation = TRUE
+    ) %>%
+    modify_column_alignment(
+        columns = c("stat_0", "ci_stat_0"),
+        align = "left"
+    ) %>%
+    as_gt() %>%
+    tab_source_note(
+        md("*Données de SPF*")
+    )
+```
+
+Finalement, 
+$$
+\begin{align}
+\hat{P}_{\text{fav}} = 64.62\% \ (0.63 - 0.67) \\
+\hat{P}_{\text{defav}} = 33.85\% \ (0.32 - 0.36)
+\end{align}
+$$
+
+
+## Objectif 2 - Estimation de la fréquence des OFDV, selon l'ESG et l'IS
+
+## Objectif 3 - Estimation du lien entre OFDV et ESG, puis entre OFDV et IS
+
+### Lien OFDV x ESG
+
+### Lien OFDV x IS
+
+
+# Discussion
+
+# Annexe
+
+## Annexe 1 - Estimation de la fréquence d'OFDV
+
+On a vu précédemment que $\hat{P}_{\text{fav}} = 64.62\% \ (0.63 - 0.67)$ et $\hat{P}_{\text{defav}} = 33.85\% \ (0.32 - 0.36)\%$.
+
+On a un effectif suffisament grand, il est donc raisonnable de supposer l'échantillon normal d'après la loi des grands nombres.
+
+D'autre part, le théorème central-limit assure que la distribution de $\hat{P}_{\text{fav}}$ et $\hat{P}_{\text{defav}}$ est normale, de paramètres $f$ et $\sigma = \sqrt{\frac{f \times (1 - f)}{n}}$, $f$ étant la fréquence empirique issue des données et $n$ l'effectif total dudit échantillon. Sous ces conditions, on obtient un encadrement de la forme : 
+$$
+\begin{align}
+\hat{P}_{\text{fav}} \in \left[f_{\text{fav}} \pm U_\alpha \sqrt{\frac{f_{\text{fav}} \times (1 - f_{\text{fav}})}{n}}\right] \\
+\hat{P}_{\text{defav}} \in \left[f_{\text{defav}} \pm U_\alpha \sqrt{\frac{f_{\text{defav}} \times (1 - f_{\text{defav}})}{n}}\right]
+\end{align}
+$$
+
+avec $U_\alpha$ un coefficient provenant de la table de la loi normale centrée réduite. Pour un $\alpha = 0.05$, on obtient $U_\alpha = 1.96$.
+
+Ainsi donc, pour $\hat{P}_{\text{fav}}$, on a :
+$$
+\begin{align}
+\hat{P}_{\text{fav}} \in \left[f_{\text{fav}} \pm U_\alpha \sqrt{\frac{f_{\text{fav}} \times (1 - f_{\text{fav}})}{n}}\right] \\
+\hat{P}_{\text{fav}} \in \left[0.6462 \pm 1.96 \sqrt{\frac{0.6462 \times (1 - 0.6462)}{2213}}\right] \\
+\hat{P}_{\text{fav}} \in \left[0.6462 \pm 1.96 \sqrt{\frac{0.6462 \times 0.3538}{2213}}\right] \\
+\hat{P}_{\text{fav}} \in \left[0.6462 \pm 0.010] \\
+\hat{P}_{\text{fav}} \in \left[0.626; 0.666]
+\end{align}
+$$
+
+Le raisonnement est identique pour $\hat{P}_{\text{defav}}$, avec $f_{\text{defav}} = 0.3385$.

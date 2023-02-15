@@ -1,60 +1,50 @@
 # ================================Librairies ===============================#
+#install.packages("skimr", "ggplot2", "tidyverse", "gtsummary", "emmeans")
 library(skimr) # Résumé des données (nb d'obs, var, val manquantes...)
 library(emmeans) # cf. https://www.youtube.com/watch?v=_okuMw4JFfU
 library(tidyverse) # Importe bcp de librairies (https://tidyverse.tidyverse.org)
 library(gtsummary) # Pour faire des tableaux de résumés
-############################################################################
 
-# ==================== Explications de certaines choses ====================#
-#### La fonction duplicated() ####
-# On enlève les doublons avec la fonction duplicated.
-# Si la ligne est un doublon, la fonction renvoie TRUE, sinon FALSE.
-# On utilise l'opérateur ! pour inverser les booléens.
-# On renvoie donc les lignes qui ne sont PAS des doublons.
+# ========================== 1. Importation des données ====================== #
+data <- read.csv("Github\\ISPED\\EPI101\\BDD\\BDD11.csv", header = TRUE, sep = ";")
 
-### Les pipes %>% ####
-# Les pipes permettent de faire des opérations sur des objets sans '(' et ')'
-# Ex. : round(exp(log(10))) devient 10 %>% log() %>% exp() %>% round()
+# ============================= 2. Résumé des données =========================#
+# Résumé des données avec skimr
+skim(data)
 
-### rbind ###
-# rbind() permet de concaténer des matrices en lignes.
+# Résumé des données avec gtsummary 
+data %>%
+  select(-ident)%>%
+  tbl_summary(label = list(sexe ~ "Sexe", age ~ "Âge"), 
+              statistic = list(all_continuous() ~"{mean} ({sd})", all_categorical() ~ "{n} ({p})")
+              )%>%
+  add_n()%>%
+  add_ci(statistic = list(all_continuous() ~ "{conf.low}, {conf.high}", all_categorical() ~ "{conf.low}, {conf.high}"))%>%
+  modify_caption("**Tableau récapitulatif de toutes les variables (N = {N})**")
 
-### map_dfr du package purrr (via tidyverse) ###
-# map_dfr() permet de faire une boucle for sur un vecteur.
+# ============================= 3. Gestion de la BDD =========================#
+# On ne garde que les variables relatives aux vaccins
+vaccins <- data[, 28:56]
+avis_vaccins_tabac <- data %>% select(Vacc_Fav, Vacc_defav, tabac)
+# Version alternative : avis_vaccins_tabac <- data_11[, c(28, 29, 23)]
 
-### distinct() du package dplyr (via tidyverse) ###
-# distinct() permet d'enlever les doublons d'une matrice.
+# Fréquence (+ IC 95%) des vaccins
+vaccins %>%
+  tbl_summary(statistic = list(all_continuous() ~"{mean} ({sd})", all_categorical() ~ "{n} ({p})"))%>%
+  add_n()%>%
+  add_ci(statistic = list(all_continuous() ~ "{conf.low}, {conf.high}", all_categorical() ~ "{conf.low}, {conf.high}"))%>%
+  modify_caption("**Tableau descriptif des retours sur les vaccins (N = {N})**")
 
-### La fonction paste() ###
-# La fonction paste() permet de concaténer des chaînes de caractères.
-# Ex. : paste("Bonjour", "à tous", sep = " ") renvoie "Bonjour à tous"
-############################################################################
+# Graphique
+ggplot(vaccins, aes(x = Vacc_Fav)) +
+  geom_bar()
 
-# ============================= Chargement des données =====================#
-# 1.1. Chargement et concaténation des données BDD1.csv à BDD13.csv
-data_initial <- read.csv("R/EPI101/BDD/BDD1.csv", header = TRUE, sep = ";")
-for (i in 2:13) {
-    data_initial <- rbind(data_initial, read.csv(paste("R/EPI101/BDD/BDD", i, ".csv", sep = ""), header = TRUE, sep = ";"))
-}
-
-# 1.2. Concaténation avec dyplr
-data_initial2 <- map_dfr(1:13, ~ read.csv(paste("R/EPI101/BDD/BDD", .x, ".csv", sep = ""), header = TRUE, sep = ";"))
-
-# 2.1. Enlever les doublons avec les fonctions R de base : duplicated().
-data_epuree <- data_initial[!duplicated(data_initial), ]
-
-# 2.2. Enlever les doublons avec dyplr
-data_epuree2 <- data_initial %>% distinct() # ou alors : data_epuree2 <- distinct(data_initial)
-############################################################################
-
-# ============================= Résumé des données =========================#
-# 3.1. Résumé des données avec skimr
-skim(data_epuree)
-
-# 3.2. Résumé des données avec gtsummary
-tbl_summary(data_epuree)
-
-# 3.3. Résumé des données avec dyplr
-data_epuree %>% glimpse()
-############################################################################
-
+# Vaccins selon le statut tabagique
+avis_vaccins_tabac %>%
+  tbl_summary(by = tabac, 
+              statistic = list(all_continuous() ~"{mean} ({sd})", all_categorical() ~ "{n} ({p})"),
+              label = list(Vacc_Fav ~ "Favorable au vaccin", Vacc_defav ~ "Défavorable au vaccin")
+              )%>%
+  add_n()%>%
+  add_ci(statistic = list(all_continuous() ~ "{conf.low}, {conf.high}", all_categorical() ~ "{conf.low}, {conf.high}"))%>%
+  modify_caption("**Croisement (Vacc_Fav, Vacc_defav) x tabagisme (N = {N})**")

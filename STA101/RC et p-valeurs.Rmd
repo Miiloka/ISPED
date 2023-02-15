@@ -1,0 +1,43 @@
+---
+title: "TP ACP"
+author: "Adrien Orué"
+output: html_document
+---
+
+# Student : qt et pt
+
+## Région critique
+```{r}  
+alpha = 5/100 
+df = 187 # degrés de liberté
+# Attention, c'est alpha/2 si on veut une région critique bilatérale
+qt(alpha, df, lower.tail = TRUE) # ]-inf, w[
+qt(alpha, df, lower.tail = FALSE) # ]w, +inf[
+```
+
+## P-valeur
+```{r}
+statistique_t = 2.57 # On écrit la statistique de test
+pt(statistique_t, df, lower.tail = TRUE) # Unilatéral gauche
+pt(statistique_t, df, lower.tail = FALSE) # Unilatéral droit
+pt(statistique_t, df, lower.tail = FALSE) * 2 # Bilatéral
+```
+
+# Fisher : qf et pf
+
+## Région critique
+```{r}	
+alpha = 5/100
+df1 = 2
+df2 = 187
+qf(alpha, df1, df2, lower.tail = TRUE) # ]-inf, w[
+qf(alpha, df1, df2, lower.tail = FALSE) # ]w, +inf[
+```
+
+## P-valeur
+```{r}
+statistique_f = 1.5 # On écrit la statistique de test
+pf(statistique_f, df1, df2, lower.tail = TRUE) # Unilatéral gauche
+pf(statistique_f, df1, df2, lower.tail = FALSE) # Unilatéral droit
+pf(statistique_f, df1, df2, lower.tail = FALSE) + pf(statistique_f, df1, df2, lower.tail = TRUE) # bilatéral
+```

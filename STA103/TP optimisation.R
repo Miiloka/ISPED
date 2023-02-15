@@ -110,20 +110,40 @@ dh_test3 <- function(x) {
     return(x^3 + 2 * (x - 1))
 }
 
-descente_gradient <- function(h, dh, x0, epsilon = 10**(-5)) {
+descente_gradient <- function(h, dh, x0, s, epsilon = 10**(-5)) {
     x <- x0
     i <- 0
     while (abs(dh(x)) >= epsilon && i < 1 / epsilon) {
         i <- i + 1
-        x <- x - 0.1 * dh(x)
+        x <- x - s * dh(x)
     }
-    return(list("Approximation de x0 : ", x,
-                "Nombre d'itérations :", i,
-                " h(x0) : ", h(x)))
+    print(paste("x0 : ", x0, " h(x0) : ", h(x0), "iterations : ", i))
+    return(c(x, i, h(x)))
 }
 
 ### Tests
-abscisses3 <- seq(-5, 5, 0.001)
+abscisses3 <- seq(0, 2, 0.001)
 plot(abscisses3, h_test_3(abscisses3), type = "l", col = "green")
-sortie3 <- descente_gradient(h_test_3, dh_test3, 1)
-abline(h = h_test_3(sortie3[[2]]), v = sortie3[[2]], col = "blue")
+sortie3 <- descente_gradient(h_test_3, dh_test3, 0, 0.001)
+abline(h = h_test_3(sortie3[[1]]), v = sortie3[[1]], col = "blue")
+
+gp_test <- function(x) {
+    return(1 / 2 * x[1]**2 + 7 / 2 * x[2]**2)
+}
+
+dgp_test <- function(x) {
+    return(c(x[1], 7 * x[2]))
+}
+
+descente_gradient_2 <- function(h, dh, x0, s, epsilon = 10**(-5)) {
+    x <- x0
+    i <- 0
+    while (abs(dh(x)) >= epsilon && i < 1 / epsilon) {
+        i <- i + 1
+        x <- x - s * dh(x)
+    }
+    return(list(x, i, h(x)))
+}
+
+### Tests
+descente_gradient_2(gp_test, dgp_test, c(7, 1.5), 0.001)

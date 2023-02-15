@@ -1,0 +1,161 @@
+---
+title: "TP ACP"
+author: "Adrien Orué"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include = FALSE, }
+knitr::opts_chunk$set(echo = TRUE, fig.align="center")
+```
+
+# Librairies
+```{r message = FALSE}
+#install.packages("FactoMineR")
+#install.packages("readr")
+#install.packages("corrplot")
+library(FactoMineR)
+library(readr)
+library(corrplot)
+```
+
+# Importation du jeu de données
+```{r}
+dataset <- read.table("C:\\Users\\jeric\\OneDrive\\Programmation\\Github\\ISPED\\STA102\\geri.txt", header = TRUE, sep = "\t")
+```
+
+On fait en sorte que les numéros des départements soient les noms des lignes du tableau de données et que la variable region soit bien considérée comme une variable qualitative.
+```{r}
+rownames(dataset) <- dataset$Departement
+dataset$region <- as.factor(dataset$region)
+```
+
+Enfin, on supprime la colonne des départements :
+```{r}
+dataset <- dataset[, -1]
+sauvegarde <- dataset
+data_quanti <- dataset[, -16]
+```
+
+# Justification de l'ACP
+Avec la matrice de corrélation, on voit que les variables sont corrélés entre elles. Ainsi, le choix de l'ACP semble pertinent.De plus, on souhaite réduire le nombre de variables pour faciliter l'analyse, et l'ACP est une méthode de réduction de dimension. Enfin, on souhaite visualiser les données, et l'ACP permet aussi d'effectuer une visualisation.
+
+## Matrice de corrélation
+```{r}
+matrice_correl <- cor(data_quanti)
+corrplot(matrice_correl, method = "color", type = "upper", order = "hclust", tl.col = "black", tl.srt = 45) #Version1
+corrplot(matrice_correl, method = "circle") #version2
+```
+
+# ACP
+```{r}
+acpGERI <- PCA(data_quanti, graph = FALSE)
+# ls(acpGERI)
+# acpGERI$ind
+head(acpGERI$ind$coord) # Coordonnées des individus dans le nuage de points.
+head(acpGERI$var$coord) # Coordonnées des variables dans le cercle de corrélation.
+```
+
+# Inerties et choix du nombre d'axe
+
+## Valeurs propres
+Les valeurs propres, rangés dans l'ordre décroissant, sont les suivantes : 
+```{r}
+acpGERI$eig
+```
+
+Il est normal d'en avoir 15, étant donné que nous avons en tout 15 variables. 
+
+Remarque :
+$$ \sum\limits_{j=1}^p \lambda_j = tr(D) = tr(P^{-1}DP) = tr(ZPP^{-1}) = tr(Z) = p = \text{Inertie}_\text{totale}$$
+
+Ainsi : 
+
+$$\frac{\text{Inertie}_\text{totale}}{p} = 1$$ 
+
+d'où le fait que la dernière ligne de la troisième colonne, on ait une inertie expliquée cumulée de 1.
+
+## Règle de kaiser
+Par la règle de Kaiser, on garde les valeurs propres qui sont supérieurs à 1. 
+```{r}
+acpGERI$eig 
+```
+
+Avec ce choix, on choisirait 4 axes pour la réduction de dimension.
+
+## Critère de Cattel (ou règle des coudes)
+Avec le critère de Cattel - ou règle des coudes - on choisit nos valeurs propres en fonction de l'allure du graphe : la pointe du "coude" correspond à la dernière valeur propre à garder.
+```{r}
+plot(acpGERI$eig[, "eigenvalue"], type = "b", xlab = "Numéro de l'axe", ylab = "Valeur propre") # 3 axes
+```
+
+Ainsi, on garde 3 valeurs propres.
+
+## Choix du nombre d'axes et justification
+J'en choisis 2, car on a 62% d'inertie expliqué, contre 78% avec 4 axes. Il est donc plus raisonnable de n'en garder que 4.
+
+Pour la suite tout de même, afin de pouvoir se comparer entre camarades, on va garder 4 composantes principales (deux plans factoriels).
+
+# Qualité et choix du nombre d'axe
+La qualité de la représentation d'une variable sur un axe dépend de son $\cos^2$ : 
+
+-  Si le $\cos^2$ est proche de 1, alors elle est bien représentée (proche du cercle) ;
+-  Sinon, tout dépend de sa valeur (si $\cos^2 > 0.80$, alors c'est une très bonne représentation).
+
+Si on veut quantifier la qualité de la représentation d'une variable sur un plan factoriel, on doit sommer les deux $\cos^2$ (sur dim1 et dim2) qu'on obtient.
+```{r}
+plot.PCA(acpGERI, choix = "var", axes = c(1,2)) # Deux axes pour le premier plan factoriel
+plot.PCA(acpGERI, choix = "ind", axes = c(1,2))
+acpGERI$var$coord
+acpGERI$var$cos2
+```
+
+Comparons maintenant les cos :
+```{r}
+qualite <- acpGERI$var$cos2[, 1:2]
+(a <- rowSums(acpGERI$var$cos2[, 1:2]))
+(b <- rowSums(acpGERI$var$cos2[, 1:4]))
+difference <- b - a
+sort(difference)
+```
+
+# On choisit 4 axes pour la suite
+
+## a. On plot l'ACP des individus et des variables
+```{r}
+acpGERI <- PCA(data_quanti, graph = FALSE, ncp = 4)
+plot.PCA(acpGERI, choix = "ind")
+plot.PCA(acpGERI, choix = "var")
+```
+
+## Représentation graphique des individus et des variables sur le deuxième plan factoriel (axes 3 et 4)
+Individus sur le second plan factoriel : 
+```{r}
+plot.PCA(acpGERI, choix = "ind", axes = c(3, 4))
+```
+
+Variables sur le second plan factoriel :
+```{r}
+plot.PCA(acpGERI, choix = "var", axes = c(3, 4))
+```
+
+### Variable supplémentaire
+Pour ajouter une variable catégorielle (= qualitative) dans l'ACP, on l'ajoute en tant que "variable supplémentaire". Pour se faire, on reprend le jeu de données où cette dite variable - ici la région, la **16e** variable - y est, et on exécute la commande suivant :
+```{r}
+acpGERIRegion <- PCA(dataset, quali.sup = 16, graph = FALSE)
+```
+
+Une fois effectué, on peut afficher notre nouveau nuage des individus avec la prise en compte de la région.
+
+Notons que :
+
+- "habillage = 16" permet d'ajouter la 16e colonne, qui est notre colonne région, pour colorer les points ;
+- "invisible = 'quali'" permet d'avoir un nom similaire entre toutes les variables (comparer avec et sans pour comprendre) ;
+- "autoLab = 'Yes'" permet d'ajouter un nom automatique, qui correspond ici au numéro du ligne DONC du département, à tous les points.
+```{r}
+plot.PCA(acpGERIRegion, choix = "ind", habillage = 16, invisible = "quali", autoLab = "yes")
+plot.PCA(acpGERIRegion, choix = "ind", habillage = 16, autoLab = "yes")
+plot.PCA(acpGERIRegion, choix = "ind", habillage = 16, autoLab = "no")
+```
+
+# Synthèse de l'ACP
